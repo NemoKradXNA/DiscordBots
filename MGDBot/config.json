@@ -1,0 +1,9 @@
+{
+  "token": "NDEzMzU2MzYwNDcwNjI2MzA0.DWXwFw.6gfej6Cg2F0YlAxRbr6mUQNxEwc",
+  "owners": [ 403908224639696896 ],
+  "moderators": [],
+  "loggingLevel": "Info",
+  "ConnectionStrings": {
+    "SQLDB": "Data Source=(localdb)\\MSSQLLocalDB;Initial Catalog=DiscordBOTDB;Integrated Security=True;Connect Timeout=30;Encrypt=False;TrustServerCertificate=True;ApplicationIntent=ReadWrite;MultiSubnetFailover=False"
+  }
+}

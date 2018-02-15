@@ -1,0 +1,22 @@
+{
+  "meetups": [
+    {
+      "name": "Birmingham",
+      "link": "https://www.meetup.com/brumindies/",
+      "url": "https://api.meetup.com/brumindies/events?&sign=true",
+      "aliasmap": [ "bi", "bru", "brum", "birmingham", "brumindies" ]
+    },
+    {
+      "name": "Leicester",
+      "link": "https://www.facebook.com/groups/LeicesterGamesNetwork/",
+      "url": "",
+      "aliasmap": [ "lei", "lgn", "leic", "leicester" ]
+    },
+    {
+      "name": "Leamington",
+      "link": "https://www.meetup.com/Leamington-Unity-Developers/",
+      "url": "https://api.meetup.com/Leamington-Unity-Developers/events?&sign=true",
+      "aliasmap": [ "lem", "lud", "leamington" ]
+    }
+  ]
+}
