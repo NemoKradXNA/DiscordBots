@@ -3,6 +3,8 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Text;
 using System.IO;
+using System.Reflection;
+
 using Newtonsoft.Json.Serialization;
 
 using System.Net;
@@ -63,6 +65,8 @@ namespace MGDBot.Modules
         }
 
         [Command("lmub")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
         public async Task ListBroadcastMUP()
         {
             EmbedBuilder b = null;
@@ -87,6 +91,8 @@ namespace MGDBot.Modules
         }
 
         [Command("smub")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
         public async Task StopBroadcastMUP(string meetup)
         {
             EmbedBuilder b = null;
@@ -110,6 +116,8 @@ namespace MGDBot.Modules
         }
 
         [Command("mub")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
         public async Task BroadcastMUP(string meetup, string duration)
         {
             EmbedBuilder b = null;
@@ -167,6 +175,8 @@ namespace MGDBot.Modules
         [Command("listmeetup")]
         [Alias(new string[] { "lmu", "lstmu", "lmup" })]
         [Summary("Lists all known meet ups")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
         public async Task ListMeetUps()
         {
             EmbedBuilder b = new EmbedBuilder();
@@ -191,6 +201,8 @@ namespace MGDBot.Modules
         [Command("meetup")]
         [Alias(new string[] { "mu", "mup" })]
         [Summary("Gets latest meetup")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
         public async Task meetupCommand(string meetup)
         {
             KnownMeetUp thisMup = GetThisMeetUp(meetup);
@@ -252,6 +264,83 @@ namespace MGDBot.Modules
         KnownMeetUp GetThisMeetUp(string meetup)
         {
             return KnownMeetups.SingleOrDefault(m => m.AliasMap.Contains(meetup.ToLower()));
+        }
+
+        [Command("commands")]
+        [Alias(new string[] { "c", "cmd", "cmds" })]
+        [Summary("This will list all the possible\ncommands you can give.\n'command' or 'command all'\nwill return all commands,\n'command admin'\nwill return admin only commands\n(if you are an admin) ")]
+        [RequireUserPermission(GuildPermission.Administrator)]
+        [RequireUserPermission(ChannelPermission.ManageChannel)]
+        public async Task CommandList(string type = "all")
+        {
+            EmbedBuilder hlpMag = GetMsg( "MeetUp Commands", "Here are the list of commands you asked for");
+            // Get All the Modules..         
+            List<CommandListItem> cmds = new List<CommandListItem>();
+
+            List<Type> tps = Assembly.GetEntryAssembly().GetTypes().ToList();
+            List<Type> types = new List<Type>();
+
+            foreach (Type t in tps)
+            {
+                if (typeof(CommandModuleBase).IsAssignableFrom(t))
+                    types.Add(t);
+            }
+
+            // Now get all the commads from them :)
+            foreach (Type t in types)
+            {
+                MemberInfo[] members = t.GetMembers();
+                foreach (MemberInfo member in members)
+                {
+                    if (Attribute.IsDefined(member, typeof(CommandAttribute)))
+                    {
+
+                        CommandListItem cmd = new CommandListItem();
+                        cmd.command = member.GetCustomAttribute<CommandAttribute>().Text;
+                        cmd.aliasmap = member.GetCustomAttribute<AliasAttribute>() != null ? string.Join(',', member.GetCustomAttribute<AliasAttribute>().Aliases) : "[No alias(s)]";
+
+                        List<RequireUserPermissionAttribute> attributes = member.GetCustomAttributes<RequireUserPermissionAttribute>().ToList();
+                        foreach (RequireUserPermissionAttribute rupa in attributes)
+                        {
+                            if (rupa.GuildPermission == GuildPermission.Administrator)
+                            {
+                                cmd.isAdmin = true;
+                                break;
+                            }
+                        }                       
+
+                        cmd.summary = member.GetCustomAttribute<SummaryAttribute>() != null ? member.GetCustomAttribute<SummaryAttribute>().Text : "No idea what this does...";
+
+                        cmds.Add(cmd);
+                    }
+                }
+            }
+            //List<CommandModuleBase> types = Assembly.GetEntryAssembly().GetTypes().Where(t => t.BaseType == typeof(CommandModuleBase)).Cast<CommandModuleBase>().ToList();
+
+            // ORder them alphabetically...
+            cmds = cmds.OrderBy(c => c.command).ToList();
+            if (cmds.Count > 0)
+            {
+                foreach (CommandListItem cmd in cmds)
+                {
+                    string data = $"Summary:\n{cmd.summary}\nAlias(s):\n{cmd.aliasmap}";
+                    string name = "!" + cmd.command;
+
+                    if (cmd.isAdmin)
+                        name = $"{name} - [Admin Only]";
+
+                    bool userIsAdmin = false;
+
+                    userIsAdmin = ((IGuildUser)((SocketGuildUser)Context.User)).GuildPermissions.Administrator;
+
+                    if (cmd.isAdmin && !userIsAdmin)
+                        continue;
+
+                    hlpMag.AddInlineField(name, data);
+                }
+            }
+
+            await Context.Channel.SendMessageAsync("", false, hlpMag);
         }
     }
 }
