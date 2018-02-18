@@ -30,6 +30,17 @@ namespace MGDBot
 
         List<BroadcastMeep> broadcasts = new List<BroadcastMeep>();
 
+        public List<BroadcastMeep> GetBroadcastsForChannel(IChannel channel, string meeup = "")
+        {
+            List<BroadcastMeep> meeps = broadcasts.Where(m => m.Channel == channel).ToList();
+
+            if(!string.IsNullOrEmpty(meeup))
+                meeps = meeps.Where(m => m.MeetUp.Name == meeup).ToList();
+
+
+            return meeps;
+        }
+
         public void SetBroadcast(KnownMeetUp meeup, ISocketMessageChannel channel, TimeSpan frequency, MeetUpBroadCastTypeEnum type, out string msg)
         {
             msg = string.Empty;
@@ -45,6 +56,21 @@ namespace MGDBot
             else
                 msg = $"A broadcast for {meeup.Name} on {channel.Name} has already been set.";
         }
-        
+
+        public void StopBroadcast(KnownMeetUp meeup, ISocketMessageChannel channel, out string msg)
+        {
+            msg = string.Empty;
+
+            BroadcastMeep mub = broadcasts.SingleOrDefault(b => b.MeetUp.Name == meeup.Name && b.Channel == channel);
+
+            if (mub == null)
+                msg = $"A broadcast for {meeup.Name} on {channel.Name} has not been set.";
+            else
+            {
+                mub.Live = false;
+                msg = $"The {mub.BroadcastType} broadcast for {meeup.Name} on {channel.Name} has been stopped.";
+                broadcasts.Remove(mub);
+            }
+        }
     }
 }

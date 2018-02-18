@@ -75,28 +75,31 @@ namespace MGDBot.DataClasses.MeetUp
                         break;
                 }
 
-                EmbedBuilder msg = new EmbedBuilder();
-
-                msg.WithTitle($"Meetup {MeetUp.Name}");
-                msg.WithDescription($"The next meetup for {MeetUp.Name}");
-                msg.WithColor(Color.DarkPurple);
-
-                if (latest != null)
+                if (Live) // If no longer live no need to broadcast...
                 {
+                    EmbedBuilder msg = new EmbedBuilder();
+
+                    msg.WithTitle($"Meetup {MeetUp.Name}");
+                    msg.WithDescription($"The next meetup for {MeetUp.Name}");
+                    msg.WithColor(Color.DarkPurple);
+
+                    if (latest != null)
+                    {
 
 
-                    msg.AddInlineField("Name:", $"{latest.name}");
-                    msg.AddInlineField("Date:", $"{latest.local_date.ToShortDateString()} {latest.local_time}");
-                    msg.AddInlineField("Venue:", $"{latest.venue.name}");
-                    msg.AddInlineField("Address:", $"{latest.venue.address_1}, {latest.venue.city}, {latest.venue.localized_country_name}");
+                        msg.AddInlineField("Name:", $"{latest.name}");
+                        msg.AddInlineField("Date:", $"{latest.local_date.ToShortDateString()} {latest.local_time}");
+                        msg.AddInlineField("Venue:", $"{latest.venue.name}");
+                        msg.AddInlineField("Address:", $"{latest.venue.address_1}, {latest.venue.city}, {latest.venue.localized_country_name}");
+                    }
+                    else
+                    {
+                        msg.WithDescription($"{MeetUp.Name} does not use MeetUp, click the name to find out more...");
+                        msg.WithUrl(MeetUp.Link);
+                    }
+
+                    Channel.SendMessageAsync("", false, msg);
                 }
-                else
-                {
-                    msg.WithDescription($"{MeetUp.Name} does not use MeetUp, click the name to find out more...");
-                    msg.WithUrl(MeetUp.Link);
-                }
-
-                Channel.SendMessageAsync("", false, msg);
             }
         }
 
@@ -109,11 +112,11 @@ namespace MGDBot.DataClasses.MeetUp
         {
             TimeSpan threadWait = new TimeSpan(0, 3, 0, 0, 0); // Need this to be in a config file?
 
-            while (DateTime.Now.Add(Duration) < latest.local_date)
+            while (latest != null && DateTime.Now.Add(Duration) < latest.local_date)
             {
                 Thread.Sleep((int)threadWait.TotalMilliseconds);
             }
-                        
+                                    
             GetNext = true;
         }
 
@@ -139,21 +142,24 @@ namespace MGDBot.DataClasses.MeetUp
 
         protected MeetUpMeet GetNextMeetup(KnownMeetUp thisMup, int offset = 0)
         {
-            HttpWebRequest webClient = (HttpWebRequest)WebRequest.Create(thisMup.URL);
-            using (HttpWebResponse response = (HttpWebResponse)webClient.GetResponse())
+            if (!string.IsNullOrEmpty(thisMup.URL))
             {
-                using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                HttpWebRequest webClient = (HttpWebRequest)WebRequest.Create(thisMup.URL);
+                using (HttpWebResponse response = (HttpWebResponse)webClient.GetResponse())
                 {
-
-                    List<MeetUpMeet> data = Newtonsoft.Json.JsonConvert.DeserializeObject<MeetUpMeet[]>(reader.ReadToEnd()).ToList();
-
-                    if (data != null && data.Count > 0)
+                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
                     {
-                        // Get Latest Meetup.
-                        MeetUpMeet latest = data.OrderBy(m => m.local_date).OrderBy(m => m.local_time).ToList()[offset];
-                        return latest;
-                    }
 
+                        List<MeetUpMeet> data = Newtonsoft.Json.JsonConvert.DeserializeObject<MeetUpMeet[]>(reader.ReadToEnd()).ToList();
+
+                        if (data != null && data.Count > 0)
+                        {
+                            // Get Latest Meetup.
+                            MeetUpMeet latest = data.OrderBy(m => m.local_date).OrderBy(m => m.local_time).ToList()[offset];
+                            return latest;
+                        }
+
+                    }
                 }
             }
 

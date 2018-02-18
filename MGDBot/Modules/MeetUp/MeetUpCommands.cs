@@ -17,6 +17,7 @@ using MGDBot.DataClasses;
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration;
 using MGDBot.Enums;
+using MGDBot.DataClasses.MeetUp;
 
 namespace MGDBot.Modules
 {
@@ -61,6 +62,53 @@ namespace MGDBot.Modules
             }
         }
 
+        [Command("lmub")]
+        public async Task ListBroadcastMUP()
+        {
+            EmbedBuilder b = null;
+            MeetUpBroadcastService broadcastService = (MeetUpBroadcastService)Services.GetService(typeof(MeetUpBroadcastService));
+
+            List<BroadcastMeep> meetupOnChannel = broadcastService.GetBroadcastsForChannel(Context.Channel);
+
+
+            if (meetupOnChannel != null && meetupOnChannel.Count > 0)
+            {
+                b = GetMsg("Broadcast List", "All meetups on this channel:-");
+
+                foreach (BroadcastMeep bmup in meetupOnChannel)
+                {
+                    b.AddInlineField(bmup.MeetUp.Name, bmup.BroadcastType);
+                }
+            }
+            else
+                b = GetErrorMsg("There are no meetups broadcast on this channel");
+
+            await Context.Channel.SendMessageAsync("", false, b);
+        }
+
+        [Command("smub")]
+        public async Task StopBroadcastMUP(string meetup)
+        {
+            EmbedBuilder b = null;
+            KnownMeetUp thisMeetup = GetThisMeetUp(meetup);
+
+            if (thisMeetup != null)
+            {
+                string msg = string.Empty;
+
+                MeetUpBroadcastService broadcastService = (MeetUpBroadcastService)Services.GetService(typeof(MeetUpBroadcastService));
+                broadcastService.StopBroadcast(thisMeetup, Context.Channel, out msg);
+
+                b = GetMsg("Stop Broadcast", msg);
+
+
+            }
+            else
+                b = GetErrorMsg($"{meetup} is not a known meet up.");
+
+            await Context.Channel.SendMessageAsync("", false, b);
+        }
+
         [Command("mub")]
         public async Task BroadcastMUP(string meetup, string duration)
         {
@@ -69,41 +117,46 @@ namespace MGDBot.Modules
 
             if (thisMeetup != null)
             {
-                MeetUpBroadcastService broadcastService = (MeetUpBroadcastService)Services.GetService(typeof(MeetUpBroadcastService));
-                string state;
-                TimeSpan ts;
-                MeetUpBroadCastTypeEnum type = MeetUpBroadCastTypeEnum.Reoccuring;
+                if (!string.IsNullOrEmpty(thisMeetup.URL))
+                {
+                    MeetUpBroadcastService broadcastService = (MeetUpBroadcastService)Services.GetService(typeof(MeetUpBroadcastService));
+                    string state;
+                    TimeSpan ts;
+                    MeetUpBroadCastTypeEnum type = MeetUpBroadCastTypeEnum.Reoccuring;
 
-                if (duration.ToLower().Substring(0, 6) == "before") // !mub name before02:00:00:00.000 in dd:hh:mm:ss.fff
-                {
-                    type = MeetUpBroadCastTypeEnum.TimeSpanBefore;
-                    ts = TimeSpan.Parse(duration.Substring(6)); // How long before.
-                }
-                else if (duration.ToLower().Substring(0, 7) == "weekly:") // !mub name weekly:Monday
-                {
-                    type = MeetUpBroadCastTypeEnum.Weekly;
-                    // 0 = sun - 6 sat
-                    int td = (int)DateTime.Now.DayOfWeek;
-                    int target = (int)(DayOfWeek)Enum.Parse(typeof(DayOfWeek), duration.Substring(7));
-                    int dayDelta = Math.Abs(target - td);
-                    ts = DateTime.Now.AddDays(dayDelta) - DateTime.Now; // Next Day to broadcast on from now
-                }
-                else if (duration.ToLower().Substring(0, 7) == "monthly") // !mub name monthly always first of the month.
-                {
-                    type = MeetUpBroadCastTypeEnum.Monthly;
-                    ts = TimeSpan.Zero; // It's the 1st of every month
+                    if (duration.ToLower().Substring(0, 6) == "before") // !mub name before02:00:00:00.000 in dd:hh:mm:ss.fff
+                    {
+                        type = MeetUpBroadCastTypeEnum.TimeSpanBefore;
+                        ts = TimeSpan.Parse(duration.Substring(6)); // How long before.
+                    }
+                    else if (duration.ToLower().Substring(0, 7) == "weekly:") // !mub name weekly:Monday
+                    {
+                        type = MeetUpBroadCastTypeEnum.Weekly;
+                        // 0 = sun - 6 sat
+                        int td = (int)DateTime.Now.DayOfWeek;
+                        int target = (int)(DayOfWeek)Enum.Parse(typeof(DayOfWeek), duration.Substring(7));
+                        int dayDelta = Math.Abs(target - td);
+                        ts = DateTime.Now.AddDays(dayDelta) - DateTime.Now; // Next Day to broadcast on from now
+                    }
+                    else if (duration.ToLower().Substring(0, 7) == "monthly") // !mub name monthly always first of the month.
+                    {
+                        type = MeetUpBroadCastTypeEnum.Monthly;
+                        ts = TimeSpan.Zero; // It's the 1st of every month
+                    }
+                    else
+                        ts = TimeSpan.Parse(duration);
+
+                    broadcastService.SetBroadcast(thisMeetup, Context.Channel, ts, type, out state);
+
+                    if (!string.IsNullOrEmpty(state))
+                    {
+                        b = GetErrorMsg(state);
+                    }
+                    else
+                        b = GetMsg("Broadcast Set", $"{type} Meet Up Broadcast set.");
                 }
                 else
-                    ts = TimeSpan.Parse(duration);                
-
-                broadcastService.SetBroadcast(thisMeetup, Context.Channel, ts, type, out state);
-
-                if (!string.IsNullOrEmpty(state))
-                {
-                    b = GetErrorMsg(state);
-                }
-                else
-                    b = GetMsg("Broadcast Set",$"{type} Meet Up Broadcast set.");
+                    b = GetWarningMsg($"{thisMeetup.Name} meetup does not use MeetUp, so a broadcast can't be set.");
             }
             else
                 b = GetErrorMsg($"{meetup} is not a known meet up.");
@@ -198,7 +251,7 @@ namespace MGDBot.Modules
 
         KnownMeetUp GetThisMeetUp(string meetup)
         {
-            return KnownMeetups.SingleOrDefault(m => m.AliasMap.Contains(meetup));
+            return KnownMeetups.SingleOrDefault(m => m.AliasMap.Contains(meetup.ToLower()));
         }
     }
 }
