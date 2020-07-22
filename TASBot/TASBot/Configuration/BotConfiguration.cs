@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Collections.Generic;
 using System.Text;
+using System.Reflection;
 
 using Microsoft.Extensions.Configuration.Json;
 using Microsoft.Extensions.Configuration;
@@ -62,9 +63,8 @@ namespace TASBot.Configuration
 
             config = new ConfigurationBuilder().SetBasePath(Environment.CurrentDirectory).AddJsonFile("config.json").Build();
 
-
             Log($"Total Owners: {Owners.Count}");
-            Log($"Total Moerators: {Moderators.Count}");
+            Log($"Total Moderators: {Moderators.Count}");
 
         }
 
@@ -87,6 +87,7 @@ namespace TASBot.Configuration
                     Console.ForegroundColor = ConsoleColor.DarkGray;
                     break;
             }
+
             Console.WriteLine($"{DateTime.Now,-19} [{Severity,-8}] BotConfiguration: {message}");
             Console.ResetColor();
         }

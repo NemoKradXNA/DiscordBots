@@ -576,215 +576,274 @@ namespace TASBot.CommandModules
         [Summary("With this command you can roll dice or flip coins (coins are 0-1), [~]roll 3D6 3 1D4 will roll 3 D6 and 1 D4\nUse the command with boom and/or bane to ignore Lowest/Highest")]
         public async Task Roll(params string[] diceParams)
         {
-            if (diceParams.Length == 0 || diceParams[0] == "?")
+            try
             {
-                await SendHelpMessage($"Usage: {BotConfiguration.thisBotConfig.CommandIndicator}roll 3D6 3 1D4 will roll 3 D6 and 1 D4", "With this command you can roll dice or flip coins (coins are 0-1)\nUse the command with boon and/or bane to ignore Lowest/Highest\nmake the last field + or - do give a mod, 3D6 +4", $"{BotConfiguration.thisBotConfig.CommandIndicator}roll 3D6 -1");
-                return;
-            }
-
-            bool ignoreL = false;
-            bool ignoreH = false;
-            bool average = false;
-
-            List<string> dice = diceParams.ToList();
-
-            int mod = 0;
-            List<string> mods = dice.Where(d => d.Contains("+") || d.Contains("-")).ToList();
-
-            foreach (string m in mods)
-            {
-                int thisMod = 0;
-                if (m.Contains("-"))
+                if (diceParams.Length == 0 || diceParams[0] == "?")
                 {
-                    string md = m.Substring(1);
-                    int.TryParse(md, out thisMod);
-                    thisMod *= -1;
-                }
-                if (m.Contains("+"))
-                {
-                    string md = m.Substring(1);
-                    int.TryParse(md, out thisMod);
+                    await SendHelpMessage($"Usage: {BotConfiguration.thisBotConfig.CommandIndicator}roll 3D6 3 1D4 will roll 3 D6 and 1 D4", "With this command you can roll dice or flip coins (coins are 0-1)\nUse the command with boon and/or bane to ignore Lowest/Highest\nmake the last field + or - do give a mod, 3D6 +4, to roll the same set multiple times, use xN, so 2D6 x2 would roll it twice.", $"{BotConfiguration.thisBotConfig.CommandIndicator}roll 3D6 -1");
+                    return;
                 }
 
-                mod += thisMod;
-            }
+                // Ignore low and high flags as well as show average flag
+                bool ignoreL = false;
+                bool ignoreH = false;
+                bool average = false;
 
-            
+                List<string> dice = diceParams.ToList();
 
-            ignoreH = dice.SingleOrDefault(d => d.ToLower() == "bane") != null;
-            ignoreL = dice.SingleOrDefault(d => d.ToLower() == "boon") != null;
-            average = dice.SingleOrDefault(d => d.ToLower() == "avg") != null;
+                int numberofRolls = 1;
 
-            // remove markers.
-            dice = dice.Where(d => d.ToLower() != "boon" && d.ToLower() != "bane" && d.ToLower() != "avg" && !d.Contains("-") && !d.Contains("+")).ToList();
+                // get first and only multiple.
+                string firstMultiplier = dice.FirstOrDefault(d => d.ToLower().Contains("x"));
 
-
-            List<int> rolls = new List<int>();
-
-            List<string> rollRecord = new List<string>();
-            List<float> averages = new List<float>();
-
-            int v = 0;
-            string badDice = "";
-            for (int d = 0; d < dice.Count; d++)
-            {
-                string thisDiceString = dice[d];
-
-                string no = "1";
-                string thisD = "D6";
-
-                if (thisDiceString.ToLower().Contains("coin"))
+                // do we have a roll multiplier?
+                if (firstMultiplier != null)
                 {
-                    no = thisDiceString.Substring(0, thisDiceString.ToUpper().IndexOf("C"));
-                    thisD = "Coin";
+                    int.TryParse(firstMultiplier.Substring(1), out numberofRolls);
+
+                    // Remove all roll multipliers
+                    dice = dice.Where(d => !d.ToLower().Contains("x")).ToList();
                 }
-                else
+
+
+                // get any dice mods +/-
+                int mod = 0;
+                List<string> mods = dice.Where(d => d.Contains("+") || d.Contains("-")).ToList();
+
+                // Sum the mods
+                foreach (string m in mods)
                 {
-                    try
+                    int thisMod = 0;
+                    if (m.Contains("-"))
                     {
-                        no = thisDiceString.Substring(0, thisDiceString.ToUpper().IndexOf("D"));
-                        thisD = thisDiceString.Substring(no.Length).ToUpper();
+                        string md = m.Substring(1);
+                        int.TryParse(md, out thisMod);
+                        thisMod *= -1;
                     }
-                    catch (Exception ex)
+                    if (m.Contains("+"))
                     {
-                        badDice += thisDiceString + " & ";
-                        continue;
-                    }
-                }
-
-                DiceTypeEnum thisDice = DiceTypeEnum.Coin;
-                if (Enum.TryParse(thisD, out thisDice))
-                {
-                    int cnt = 1;
-                    if (string.IsNullOrEmpty(no))
-                        no = "1";
-                    int.TryParse(no, out cnt);
-
-                    averages.Add((((int)thisDice + 1) / 2f) * cnt);
-
-                    for (int dr = 0; dr < cnt; dr++)
-                    {
-                        int valueRolled = mapService.GetDiceRoll(thisDice, 1);
-                        rollRecord.Add($"Rolling a {thisDice} for {valueRolled}");
-                        rolls.Add(valueRolled);
+                        string md = m.Substring(1);
+                        int.TryParse(md, out thisMod);
                     }
 
+                    mod += thisMod;
                 }
-                else
+
+                // do we need to ignore the higest roll?
+                ignoreH = dice.SingleOrDefault(d => d.ToLower() == "bane") != null;
+                // do we need to ignore the lowest roll?
+                ignoreL = dice.SingleOrDefault(d => d.ToLower() == "boon") != null;
+                // do we want the average?
+                average = dice.SingleOrDefault(d => d.ToLower() == "avg") != null;
+
+                // remove markers.
+                dice = dice.Where(d => d.ToLower() != "boon" && d.ToLower() != "bane" && d.ToLower() != "avg" && !d.Contains("-") && !d.Contains("+")).ToList();
+
+                for (int rollCnt = 0; rollCnt < numberofRolls; rollCnt++)
                 {
-                    badDice += thisDiceString + " & ";
+                    // Values rolled
+                    List<int> rolls = new List<int>();
+
+                    // user output of the roll.
+                    List<string> rollRecord = new List<string>();
+
+                    // roll averages
+                    List<float> averages = new List<float>();
+
+                    // final roll value
+                    int rollValue = 0;
+                    // user outpur for bad dice.
+                    string badDice = "";
+
+
+                    for (int d = 0; d < dice.Count; d++)
+                    {
+                        // dice to roll
+                        string thisDiceString = dice[d];
+
+                        // How many dice?
+                        string no = "1";
+                        // What type of dice (D6 by default).
+                        string thisD = "D6";
+
+                        // Is it a coin?
+                        if (thisDiceString.ToLower().Contains("coin"))
+                        {
+                            no = thisDiceString.Substring(0, thisDiceString.ToUpper().IndexOf("C"));
+                            thisD = "Coin";
+                        }
+                        else
+                        {
+                            try
+                            {
+                                no = thisDiceString.Substring(0, thisDiceString.ToUpper().IndexOf("D"));
+                                thisD = thisDiceString.Substring(no.Length).ToUpper();
+                            }
+                            catch (Exception ex)
+                            {
+                                badDice += thisDiceString + " & ";
+                                continue;
+                            }
+                        }
+
+                        // Dice enum
+                        DiceTypeEnum thisDice = DiceTypeEnum.Coin;
+
+                        // Parse thisDice into an enum
+                        if (Enum.TryParse(thisD, out thisDice))
+                        {
+                            // actual dice count
+                            int cnt = 1;
+
+                            // if no is null, set to 1
+                            if (string.IsNullOrEmpty(no))
+                                no = "1";
+
+                            // try and parse how many to roll.
+                            int.TryParse(no, out cnt);
+
+                            // add dice average for this dice type.
+                            averages.Add((((int)thisDice + 1) / 2f) * cnt);
+
+                            // make each roll now.
+                            for (int dr = 0; dr < cnt; dr++)
+                            {
+                                // Roll the dice
+                                int valueRolled = mapService.GetDiceRoll(thisDice, 1);
+
+                                // record the outcome
+                                rollRecord.Add($"Rolling a {thisDice} for {valueRolled}");
+
+                                // add it to the list of rolls.
+                                rolls.Add(valueRolled);
+                            }
+
+                        }
+                        else // Failed to parse to must be a bad dice type :/
+                        {                            
+                            badDice += thisDiceString + " & ";
+                        }
+                    }
+
+                    int l = int.MaxValue;
+                    int h = int.MinValue;
+
+                    // Find lowest and highest rolls
+                    foreach (int r in rolls)
+                    {
+                        l = Math.Min(l, r);
+                        h = Math.Max(h, r);
+                    }
+
+                    if (ignoreH)
+                        rollRecord.Add($"Highest Roll was {h}");
+                    if (ignoreL)
+                        rollRecord.Add($"Lowest Roll was {l}");
+
+                    int idx = 0;
+
+                    // Markers, has the boon or bust already been applied?
+                    bool ignoredH = false;
+                    bool ignoredL = false;
+
+                    // output string showing what#s been rolled and applied.
+                    string simleOutput = "";
+
+                    foreach (int r in rolls)
+                    {
+                        int thisV = r;
+
+                        if (!ignoredH && ignoreH && thisV >= h)
+                        {
+                            ignoredH = true;
+                            rollRecord[idx] = $"{rollRecord[idx]} Ignored";
+                            thisV = 0;
+                        }
+
+                        if (!ignoredL && ignoreL && thisV <= l)
+                        {
+                            ignoredL = true;
+                            rollRecord[idx] = $"{rollRecord[idx]} Ignored";
+                            thisV = 0;
+                        }
+
+                        rollValue += thisV;
+
+                        if (thisV > 0)
+                            simleOutput += $"{thisV}+";
+
+                        idx++;
+                    }
+
+                    if (simleOutput.Length > 0)
+                        simleOutput = simleOutput.Substring(0, simleOutput.Length - 1);
+
+                    if (badDice.Length != 0)
+                    {
+                        badDice = badDice.Substring(0, badDice.Length - 3);
+                        badDice = $"\nBad dice/param ignored {badDice}";
+                    }
+
+                    rollValue += mod;
+
+                    string txt = $"You rolled a total of {rollValue} {badDice}";
+
+                    // Build output to server.
+                    EmbedBuilder msg = GetMsg(defaultColor, $"Rolling {string.Join(' ', dice)}", txt);
+
+                    foreach (string str in rollRecord)
+                    {
+                        if (str.ToLower().Contains("lowest"))
+                            msg.AddField("Lowest", str);
+                        else if (str.ToLower().Contains("highest"))
+                            msg.AddField("Highest", str);
+                        else
+                            msg.AddField("Roll", str);
+                    }
+
+                    if (mod != 0)
+                    {
+                        if (mod > 0)
+                        {
+                            msg.AddField("Mod", $"+{mod}");
+                            simleOutput = $"({simleOutput})+{mod}";
+                        }
+                        else
+                        {
+                            msg.AddField("Mod", $"{mod}");
+                            simleOutput = $"({simleOutput}){mod}";
+                        }
+                    }
+
+                    // simplify output..
+                    msg = GetMsg(defaultColor, $"Rolling {string.Join(' ', dice)}", txt);
+                    simleOutput += $"={rollValue}";
+
+                    if (average)
+                    {
+                        int sumAverage = (int)averages.Sum();
+                        msg.AddField($"Calculated Average", sumAverage);
+                    }
+
+
+                    string ignored = rollRecord.SingleOrDefault(rr => rr.Contains("Ignored"));
+                    if (ignored != null)
+                        msg.AddField("Ignored", ignored);
+
+                    msg.AddField($"Result {rollValue}", simleOutput);
+
+                    if (!UsersLastRollResult.ContainsKey(Context.User))
+                        UsersLastRollResult.Add(Context.User, 0);
+
+                    UsersLastRollResult[Context.User] = rollValue;
+
+                    await SendMessageAsync(msg);
                 }
             }
-
-            int l = int.MaxValue;
-            int h = int.MinValue;
-
-            // Find lowest and heighest rolls
-            foreach (int r in rolls)
+            catch (Exception ex)
             {
-                l = Math.Min(l, r);
-                h = Math.Max(h, r);
+                await SendMessageAsync(GetErrorMsg(ex.Message, Context.User));
             }
-
-            if (ignoreH)
-                rollRecord.Add($"Highst Roll was {h}");
-            if (ignoreL)
-                rollRecord.Add($"Lowest Roll was {l}");
-
-            int idx = 0;
-            bool ignoredH = false;
-            bool ignoredL = false;
-
-            string simple = "";
-
-            foreach (int r in rolls)
-            {
-                int thisV = r;
-
-                if (!ignoredH && ignoreH && thisV >= h)
-                {
-                    ignoredH = true;
-                    rollRecord[idx] = $"{rollRecord[idx]} Ignored";
-                    thisV = 0;
-                }
-
-                if (!ignoredL && ignoreL && thisV <= l)
-                {
-                    ignoredL = true;
-                    rollRecord[idx] = $"{rollRecord[idx]} Ignored";
-                    thisV = 0;
-                }
-
-                v += thisV;
-
-                if (thisV > 0)
-                    simple += $"{thisV}+";
-
-                idx++;
-            }
-
-            if (simple.Length > 0)
-                simple = simple.Substring(0, simple.Length - 1);
-
-            if (badDice.Length != 0)
-            {
-                badDice = badDice.Substring(0, badDice.Length - 3);
-                badDice = $"\nBad dice/param ignored {badDice}";
-            }
-
-            v += mod;
-
-            string txt = $"You rolled a total of {v} {badDice}";
-
-            EmbedBuilder msg = GetMsg(defaultColor, $"Rolling {string.Join(' ', dice)}", txt);
-
-            foreach (string str in rollRecord)
-            {
-                if(str.ToLower().Contains("lowest"))
-                    msg.AddField("Lowest", str);
-                else if (str.ToLower().Contains("highest"))
-                        msg.AddField("Highest", str);
-                else
-                    msg.AddField("Roll", str);
-            }
-
-            if (mod != 0)
-            {
-                if (mod > 0)
-                {
-                    msg.AddField("Mod", $"+{mod}");
-                    simple = $"({simple})+{mod}";
-                }
-                else
-                {
-                    msg.AddField("Mod", $"{mod}");
-                    simple = $"({simple}){mod}";
-                }
-            }
-
-            // simplify output..
-            msg = GetMsg(defaultColor, $"Rolling {string.Join(' ', dice)}", txt);
-            simple += $"={v}";
-
-            if (average)
-            {
-                int sumAverage = (int)averages.Sum();
-                msg.AddField($"Calculated Average", sumAverage);
-            }
-
-
-            string ignored = rollRecord.SingleOrDefault(rr => rr.Contains("Ignored"));
-            if (ignored != null)
-                msg.AddField("Ignored", ignored);
-
-            msg.AddField($"Result {v}", simple);
-
-            if (!UsersLastRollResult.ContainsKey(Context.User))
-                UsersLastRollResult.Add(Context.User, 0);
-
-            UsersLastRollResult[Context.User] = v;
-
-            await SendMessageAsync(msg);
         }
 
         [Command("library")]
@@ -1174,7 +1233,7 @@ namespace TASBot.CommandModules
 
         [Command("show-all-characters")]
         [Alias(new string[] { "show-all-chrs" })]
-        [Summary("[Admin Olny] Show a list of all the character sheets currently stored...")]
+        [Summary("[Admin Only] Show a list of all the character sheets currently stored...")]
         [RequireUserPermission(GuildPermission.Administrator)]
         public async Task GetAllCharacterSheets(string player = null)
         {

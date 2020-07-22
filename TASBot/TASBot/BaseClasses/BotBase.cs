@@ -26,8 +26,27 @@ namespace TASBot.BaseClasses
                 LogLevel = BotConfiguration.thisBotConfig.LogSeverity,
             });
 
+            //discord.Connected += Discord_Connected;
+            //discord.LoggedIn += Discord_LoggedIn;
+            discord.Ready += Discord_Ready;
+
             discord.Log += Logger;
             commands.Log += Logger;
+
+            
+        }
+
+        private Task Discord_Ready()
+        {
+            
+           
+            int guilds = discord.Guilds.Count;
+            Logger(new LogMessage(LogSeverity.Info,"Ready",$"Currently connected to {guilds} servers."));
+            foreach (SocketGuild guild in discord.Guilds)
+            {
+                Logger(new LogMessage(LogSeverity.Info, string.Format("{0,-25}", guild.Name), string.Format("{0:25} - {1:dd-MM-yyyy}", guild.Owner.Username, guild.CreatedAt)));
+            }
+            return Task.CompletedTask;            
         }
 
         public object GetService(Type serviceType)
@@ -49,6 +68,7 @@ namespace TASBot.BaseClasses
 
             // Subscribe a handler to see if a message invokes a command.
             discord.MessageReceived += HandleCommandAsync;
+
         }
 
         private async Task HandleCommandAsync(SocketMessage arg)

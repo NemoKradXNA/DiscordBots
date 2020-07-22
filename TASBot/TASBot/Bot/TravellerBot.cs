@@ -19,7 +19,7 @@ namespace TASBot.Bot
     {
         public TravellerBot() : base()
         {
-
+            Logger(new LogMessage(LogSeverity.Info, "TASBot", $"Version: { Assembly.GetExecutingAssembly().GetName().Version }"));
         }
     }
 }
