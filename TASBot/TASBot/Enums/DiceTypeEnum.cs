@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TASBot.Enums
+namespace TASLibBot.Enums
 {
     public enum DiceTypeEnum : int
     {

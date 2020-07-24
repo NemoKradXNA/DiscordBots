@@ -8,9 +8,9 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
-using TASBot.Configuration;
+using TASLibBot.Configuration;
 
-namespace TASBot.BaseClasses
+namespace TASLibBot.BaseClasses
 {
     public class BotBase : IServiceProvider
     {

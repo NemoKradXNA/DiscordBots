@@ -5,10 +5,10 @@ using System.Threading.Tasks;
 using Discord;
 using Discord.Commands;
 
-using TASBot.BaseClasses;
-using TASBot.Configuration;
+using TASLibBot.BaseClasses;
+using TASLibBot.Configuration;
 
-namespace TASBot.CommandModules
+namespace TASLibBot.CommandModules
 {
     public class HelpCommands : CommandModuleBase
     {

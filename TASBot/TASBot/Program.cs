@@ -1,10 +1,10 @@
 ﻿using System;
 
-using TASBot.Configuration;
-using TASBot.Bot;
-using TASBot.Services;
+using TASLibBot.Configuration;
+using TASLibBot.Bot;
+using TASLibBot.Services;
 
-namespace TASBot
+namespace TASLibBot
 {
     class Program
     {

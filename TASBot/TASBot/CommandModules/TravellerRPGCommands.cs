@@ -10,19 +10,19 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Net;
 
-using TASBot.BaseClasses;
-using TASBot.Utilities;
-using TASBot.Services;
-using TASBot.Enums;
-using TASBot.DataModels;
-using TASBot.Configuration;
+using TASLibBot.BaseClasses;
+using TASLibBot.Utilities;
+using TASLibBot.Services;
+using TASLibBot.Enums;
+using TASLibBot.DataModels;
+using TASLibBot.Configuration;
 
 using Discord.WebSocket;
 
 using IronPdf;
 using IronPdf.Forms;
 
-namespace TASBot.CommandModules
+namespace TASLibBot.CommandModules
 {
     /// <summary>
     /// This command module is designed to be used for RPG elements.

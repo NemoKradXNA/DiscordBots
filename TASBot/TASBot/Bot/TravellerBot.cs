@@ -11,15 +11,15 @@ using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 
-using TASBot.BaseClasses;
+using TASLibBot.BaseClasses;
 
-namespace TASBot.Bot
+namespace TASLibBot.Bot
 {
     public class TravellerBot : BotBase
     {
         public TravellerBot() : base()
         {
-            Logger(new LogMessage(LogSeverity.Info, "TASBot", $"Version: { Assembly.GetExecutingAssembly().GetName().Version }"));
+            Logger(new LogMessage(LogSeverity.Info, "TASLibBot", $"Version: { Assembly.GetExecutingAssembly().GetName().Version }"));
         }
     }
 }

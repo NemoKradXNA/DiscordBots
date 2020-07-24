@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-using TASBot.Enums;
+using TASLibBot.Enums;
 
-namespace TASBot.Interfaces
+namespace TASLibBot.Interfaces
 {
     public interface ITravellerMapAPIService
     {

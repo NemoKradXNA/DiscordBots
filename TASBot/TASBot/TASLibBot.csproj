@@ -8,9 +8,9 @@
     <Description>This is a Discord Bot intended to be used on channels that are creted for the Traveller RPG</Description>
     <Copyright>2020</Copyright>
     <RepositoryUrl>https://github.com/NemoKradXNA/DiscordBots</RepositoryUrl>
-    <AssemblyVersion>1.0.0.1</AssemblyVersion>
+    <AssemblyVersion>1.0.0.2</AssemblyVersion>
     <Version>1.0.1</Version>
-    <FileVersion>1.0.0.1</FileVersion>
+    <FileVersion>1.0.0.2</FileVersion>
     <RepositoryType>git</RepositoryType>
   </PropertyGroup>
 

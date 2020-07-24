@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using TASBot.Enums;
-using TASBot.Interfaces;
+using TASLibBot.Enums;
+using TASLibBot.Interfaces;
 
-namespace TASBot.Services
+namespace TASLibBot.Services
 {
     public class TravellerService : ITravellerMapAPIService, IRPGService
     {

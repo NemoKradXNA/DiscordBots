@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TASBot.DataModels
+namespace TASLibBot.DataModels
 {
     public class Universe
     {

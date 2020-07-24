@@ -4,7 +4,7 @@ using System.Net;
 using System.IO;
 using System.Threading;
 
-namespace TASBot.Utilities
+namespace TASLibBot.Utilities
 {
     public delegate void HTTPCallBack(string response);
 

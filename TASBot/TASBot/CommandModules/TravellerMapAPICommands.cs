@@ -10,13 +10,13 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
 using System.Net;
 
-using TASBot.BaseClasses;
-using TASBot.Utilities;
-using TASBot.Services;
-using TASBot.DataModels;
-using TASBot.Configuration;
+using TASLibBot.BaseClasses;
+using TASLibBot.Utilities;
+using TASLibBot.Services;
+using TASLibBot.DataModels;
+using TASLibBot.Configuration;
 
-namespace TASBot.CommandModules
+namespace TASLibBot.CommandModules
 {
     /// <summary>
     /// This Command Module is used to interface with the most excellent https://travellermap.com API

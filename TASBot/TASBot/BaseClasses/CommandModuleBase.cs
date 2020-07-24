@@ -21,7 +21,7 @@ using Microsoft.Extensions.Configuration;
 
 
 
-namespace TASBot.BaseClasses
+namespace TASLibBot.BaseClasses
 {
     public class CommandModuleBase : ModuleBase<SocketCommandContext>
     {

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Configuration;
 
 using Discord;
 
-namespace TASBot.Configuration
+namespace TASLibBot.Configuration
 {
     public class BotConfiguration
     {
